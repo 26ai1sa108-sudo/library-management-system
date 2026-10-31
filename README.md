@@ -8,9 +8,9 @@ issue and return books, and calculate late fines automatically.
 
 | Name | Role |
 |------|------|
-| Saksham Seth | [Your role, e.g. Developer] |
-| Shubh Asati | [Role] |
-| Rajkrishnapal Malviya | [Role] |
+| Saksham Seth | [ Developer] |
+| Shubh Asati |  |
+| Rajkrishnapal Malviya |  |
 
 ## Features
 
