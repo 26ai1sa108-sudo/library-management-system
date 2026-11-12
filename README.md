@@ -8,9 +8,9 @@ issue and return books, and calculate late fines automatically.
 
 | Name | Role |
 |------|------|
-| Saksham Seth | [ Developer] |
-| Shubh Asati |  |
-| Rajkrishnapal Malviya |  |
+| Saksham Seth | Database design and Books module |
+| Shubh Asati | Members module |
+| Rajkrishnapal Malviya | Issue / return module and fine calculation |
 
 ## Features
 
