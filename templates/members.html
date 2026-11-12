@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Register member</h2>
+  <form class="row" method="post" action="{{ url_for('add_member') }}">
+    <div><label>Name</label><input name="name" required></div>
+    <div><label>Email</label><input name="email" type="email"></div>
+    <div><label>Phone</label><input name="phone"></div>
+    <div><label>Type</label>
+      <select name="member_type"><option>Student</option><option>Faculty</option><option>Staff</option></select>
+    </div>
+    <button>Add member</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Members</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Type</th><th>Joined</th><th></th></tr></thead>
+      <tbody>
+      {% for m in members %}
+        <tr>
+          <td>{{ m.member_id }}</td><td>{{ m.name }}</td><td>{{ m.email or '-' }}</td><td>{{ m.phone or '-' }}</td>
+          <td>{{ m.member_type }}</td><td>{{ m.join_date }}</td>
+          <td>
+            <form method="post" action="{{ url_for('delete_member', member_id=m.member_id) }}" onsubmit="return confirm('Delete this member?')">
+              <button class="small danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7">No members yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

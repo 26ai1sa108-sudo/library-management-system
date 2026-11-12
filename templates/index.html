@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="stats">
+  <div class="stat"><b>{{ stats.books }}</b><small>Book titles</small></div>
+  <div class="stat"><b>{{ stats.members }}</b><small>Members</small></div>
+  <div class="stat"><b>{{ stats.issued }}</b><small>Currently issued</small></div>
+  <div class="stat"><b>{{ stats.overdue }}</b><small>Overdue</small></div>
+</div>
+<div class="card">
+  <h2>Welcome</h2>
+  <p class="note" style="margin:0">Manage books and members, issue and return books, and calculate fines automatically for late returns.</p>
+</div>
+{% endblock %}

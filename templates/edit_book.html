@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Edit book</h2>
+  <form class="row" method="post">
+    <div><label>Title</label><input name="title" value="{{ book.title }}" required></div>
+    <div><label>Author</label><input name="author" value="{{ book.author }}" required></div>
+    <div><label>Category</label><input name="category" value="{{ book.category or '' }}"></div>
+    <div><label>ISBN</label><input name="isbn" value="{{ book.isbn or '' }}"></div>
+    <div><label>Total copies</label><input name="total_copies" type="number" min="1" value="{{ book.total_copies }}" required></div>
+    <div style="display:flex; gap:8px"><button>Save</button><a class="btn ghost" href="{{ url_for('books') }}">Cancel</a></div>
+  </form>
+</div>
+{% endblock %}

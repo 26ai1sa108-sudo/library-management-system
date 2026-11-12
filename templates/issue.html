@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Issue a book</h2>
+  <form class="row" method="post" action="{{ url_for('issue_book') }}">
+    <div><label>Book</label>
+      <select name="book_id" required>
+        {% for b in books %}<option value="{{ b.book_id }}">{{ b.title }} ({{ b.available_copies }} available)</option>
+        {% else %}<option value="">No copies available</option>{% endfor %}
+      </select>
+    </div>
+    <div><label>Member</label>
+      <select name="member_id" required>
+        {% for m in members %}<option value="{{ m.member_id }}">{{ m.name }}</option>
+        {% else %}<option value="">Add a member first</option>{% endfor %}
+      </select>
+    </div>
+    <button>Issue (due in {{ loan_days }} days)</button>
+  </form>
+  <p class="note">Fine rule: Rs {{ fine_per_day }} for every day after the due date.</p>
+</div>
+
+<div class="card">
+  <h2>Currently issued</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Book</th><th>Member</th><th>Issued</th><th>Due</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      {% for r in current %}
+        <tr>
+          <td>{{ r.title }}</td><td>{{ r.name }}</td><td>{{ r.issue_date }}</td><td>{{ r.due_date }}</td>
+          <td>
+            {% if r.late_days > 0 %}<span class="tag late">{{ r.late_days }} day(s) late, Rs {{ r.fine_now }}</span>
+            {% else %}<span class="tag ok">On time</span>{% endif %}
+          </td>
+          <td>
+            <form method="post" action="{{ url_for('return_book', issue_id=r.issue_id) }}">
+              <button class="small good">Return</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6">No books are issued right now.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Return history (last 20)</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Book</th><th>Member</th><th>Issued</th><th>Returned</th><th>Fine</th></tr></thead>
+      <tbody>
+      {% for r in history %}
+        <tr><td>{{ r.title }}</td><td>{{ r.name }}</td><td>{{ r.issue_date }}</td><td>{{ r.return_date }}</td><td>Rs {{ r.fine_amount }}</td></tr>
+      {% else %}
+        <tr><td colspan="5">No books have been returned yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

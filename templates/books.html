@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Add a book</h2>
+  <form class="row" method="post" action="{{ url_for('add_book') }}">
+    <div><label>Title</label><input name="title" required></div>
+    <div><label>Author</label><input name="author" required></div>
+    <div><label>Category</label><input name="category"></div>
+    <div><label>ISBN</label><input name="isbn"></div>
+    <div><label>Copies</label><input name="total_copies" type="number" min="1" value="1" required></div>
+    <button>Add book</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Books</h2>
+  <form method="get" style="display:flex; gap:8px; margin-bottom:14px">
+    <input name="q" value="{{ q }}" placeholder="Search by title, author or category">
+    <button>Search</button>
+    {% if q %}<a class="btn ghost" href="{{ url_for('books') }}">Clear</a>{% endif %}
+  </form>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>ISBN</th><th>Available</th><th></th></tr></thead>
+      <tbody>
+      {% for b in books %}
+        <tr>
+          <td>{{ b.title }}</td><td>{{ b.author }}</td><td>{{ b.category or '-' }}</td><td>{{ b.isbn or '-' }}</td>
+          <td><span class="tag {{ 'ok' if b.available_copies > 0 else 'no' }}">{{ b.available_copies }} / {{ b.total_copies }}</span></td>
+          <td class="actions">
+            <a class="btn small ghost" href="{{ url_for('edit_book', book_id=b.book_id) }}">Edit</a>
+            <form method="post" action="{{ url_for('delete_book', book_id=b.book_id) }}" onsubmit="return confirm('Delete this book?')">
+              <button class="small danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6">No books found.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
