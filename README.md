@@ -65,8 +65,8 @@ no installation needed).
 ## Project Milestones
 
 - [x] **Milestone 1:** requirement analysis and system design (ER diagram, workflow, wireframes)
-- [ ] **Milestone 2:** core modules (books, members, issue / return)
-- [ ] **Milestone 3:** fine calculation, search, reports and final testing
+- [x] **Milestone 2:** core modules (books, members, issue / return)
+- [x] **Milestone 3:** fine calculation, search, reports and final testing
 
 ## Screenshots
 
