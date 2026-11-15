@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h2>Overdue books report</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Book</th><th>Member</th><th>Email</th><th>Due date</th><th>Days late</th><th>Fine so far</th></tr></thead>
+      <tbody>
+      {% for r in report %}
+        <tr>
+          <td>{{ r.title }}</td><td>{{ r.name }}</td><td>{{ r.email or '-' }}</td>
+          <td>{{ r.due_date }}</td><td>{{ r.late_days }}</td><td>Rs {{ r.fine_now }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6">No overdue books. Everything is on time.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="note">Total fine pending: <b>Rs {{ total_fine }}</b></p>
+</div>
+{% endblock %}

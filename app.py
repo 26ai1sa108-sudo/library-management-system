@@ -8,12 +8,14 @@ Run:  python app.py   (or double-click run.bat on Windows)
 Open: http://127.0.0.1:5000
 """
 import os
+import re
 import sqlite3
 import threading
 import webbrowser
 from datetime import date, timedelta
 
-from flask import Flask, flash, g, redirect, render_template, request, url_for
+from flask import Flask, flash, g, redirect, render_template, request, session, url_for
+from werkzeug.security import check_password_hash
 
 app = Flask(__name__)
 app.secret_key = "library-micro-project"
@@ -23,6 +25,77 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "library.db")
 
 LOAN_DAYS = 14      # number of days a book can be kept
 FINE_PER_DAY = 5    # fine in Rs per late day
+MAX_COPIES = 100    # upper limit for the number of copies of one book
+
+# Admin login. The password is stored as a hash, never as plain text.
+# Default login:  username = admin   password = admin123
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD_HASH = "scrypt:32768:8:1$h34HMB1eljojkx7r$6e268d15866de6a7d90e94ebcc0ab6182c2edf0cf0c37b4a8bcf528801dc17952f5d0f574316ff4be0e9633a585ec25a30ef88ed8abd92e5097cbb920ed750e3"
+
+
+# -------------------------------------------------------------- validation
+# Each helper returns an error message (text) or None when the value is fine.
+def check_book_form(f):
+    if not f.get("title", "").strip():
+        return "Title cannot be empty."
+    if not f.get("author", "").strip():
+        return "Author cannot be empty."
+    copies = f.get("total_copies", "").strip() or "1"
+    if not copies.isdigit() or not 1 <= int(copies) <= MAX_COPIES:
+        return f"Copies must be a whole number between 1 and {MAX_COPIES}."
+    isbn = f.get("isbn", "").strip().replace("-", "")
+    if isbn and not (isbn.isdigit() and len(isbn) in (10, 13)):
+        return "ISBN must have 10 or 13 digits."
+    return None
+
+
+def check_member_form(f, db):
+    if not f.get("name", "").strip():
+        return "Name cannot be empty."
+    email = f.get("email", "").strip().lower()
+    if email:
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            return "Please enter a valid email address."
+        if db.execute("SELECT 1 FROM members WHERE lower(email) = ?", (email,)).fetchone():
+            return "A member with this email already exists."
+    phone = f.get("phone", "").strip()
+    if phone and not (phone.isdigit() and len(phone) == 10):
+        return "Phone number must have exactly 10 digits."
+    return None
+
+
+# ------------------------------------------------------------------- login
+@app.before_request
+def require_login():
+    """Every page except the login page needs an admin to be logged in."""
+    if request.endpoint in (None, "login", "static"):
+        return None
+    if not session.get("admin"):
+        return redirect(url_for("login", next=request.path))
+    return None
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        if username == ADMIN_USERNAME and check_password_hash(ADMIN_PASSWORD_HASH, password):
+            session["admin"] = True
+            next_page = request.args.get("next", "")
+            # only allow redirects inside this site
+            if not next_page.startswith("/") or next_page.startswith("//"):
+                next_page = url_for("index")
+            return redirect(next_page)
+        flash("Wrong username or password.", "err")
+    return render_template("login.html")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    flash("You have been logged out.", "ok")
+    return redirect(url_for("login"))
 
 
 # ---------------------------------------------------------------- database
@@ -131,7 +204,11 @@ def books():
 @app.route("/books/add", methods=["POST"])
 def add_book():
     f = request.form
-    copies = max(1, int(f.get("total_copies") or 1))
+    error = check_book_form(f)
+    if error:
+        flash(error, "err")
+        return redirect(url_for("books"))
+    copies = int(f.get("total_copies") or 1)
     db = get_db()
     db.execute(
         "INSERT INTO books (title, author, category, isbn, total_copies, available_copies)"
@@ -153,7 +230,11 @@ def edit_book(book_id):
         return redirect(url_for("books"))
     if request.method == "POST":
         f = request.form
-        new_total = max(1, int(f.get("total_copies") or 1))
+        error = check_book_form(f)
+        if error:
+            flash(error, "err")
+            return redirect(url_for("edit_book", book_id=book_id))
+        new_total = int(f.get("total_copies") or 1)
         issued_now = book["total_copies"] - book["available_copies"]
         if new_total < issued_now:
             flash(f"Total copies cannot be less than {issued_now}, because that many are currently issued.", "err")
@@ -197,6 +278,10 @@ def members():
 def add_member():
     f = request.form
     db = get_db()
+    error = check_member_form(f, db)
+    if error:
+        flash(error, "err")
+        return redirect(url_for("members"))
     db.execute(
         "INSERT INTO members (name, email, phone, member_type, join_date) VALUES (?,?,?,?,?)",
         (f["name"].strip(), f.get("email", "").strip(), f.get("phone", "").strip(),
@@ -305,6 +390,24 @@ def return_book(issue_id):
     else:
         flash("Book returned on time. No fine.", "ok")
     return redirect(url_for("issue_page"))
+
+
+# ------------------------------------------------------------------ overdue
+@app.route("/overdue")
+def overdue_report():
+    db = get_db()
+    rows = db.execute(
+        "SELECT i.*, b.title, m.name, m.email FROM issue_records i"
+        " JOIN books b ON b.book_id = i.book_id JOIN members m ON m.member_id = i.member_id"
+        " WHERE i.return_date IS NULL AND i.due_date < ? ORDER BY i.due_date",
+        (str(date.today()),),
+    ).fetchall()
+    report = []
+    for r in rows:
+        late_days = (date.today() - date.fromisoformat(r["due_date"])).days
+        report.append({**dict(r), "late_days": late_days, "fine_now": late_days * FINE_PER_DAY})
+    total_fine = sum(r["fine_now"] for r in report)
+    return render_template("overdue.html", report=report, total_fine=total_fine)
 
 
 # --------------------------------------------------------------------- run
