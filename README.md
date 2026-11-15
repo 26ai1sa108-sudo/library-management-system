@@ -75,3 +75,6 @@ See the `showcase/` folder for the poster, ER diagram, workflow, features and ar
 ## License
 
 Made for academic purposes.
+## Admin login
+Username: admin
+Password: admin123 (for demonstration only)
